@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>文件上传和下载</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f4f9;
+      }
+      .container {
+        width: 400px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        background-color: white;
+        text-align: center;
+      }
+      h2 {
+        color: #333;
+      }
+      .file-upload,
+      .file-download {
+        margin: 20px 0;
+      }
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      input[type='file'],
+      input[type='text'] {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        outline: none;
+      }
+      .btn {
+        padding: 10px;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn-upload {
+        background-color: #4caf50;
+      }
+      .btn-download {
+        background-color: #008cba;
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>文件上传和下载</h2>
+
+      <!-- 文件上传 -->
+      <div class="file-upload">
+        <h3>上传文件</h3>
+        <div class="input-group">
+          <input type="file" id="uploadFile" />
+          <button class="btn btn-upload" onclick="uploadFile()">上传</button>
+        </div>
+        <p id="uploadStatus" class="status"></p>
+      </div>
+
+      <!-- 文件下载 -->
+      <div class="file-download">
+        <h3>下载文件</h3>
+        <div class="input-group">
+          <input type="text" id="downloadFileName" placeholder="输入文件名" />
+          <button class="btn btn-download" onclick="downloadFile()">下载</button>
+        </div>
+        <p id="downloadStatus" class="status"></p>
+      </div>
+    </div>
+
+    <script>
+      const apiBaseUrl = 'http://127.0.0.1:5000' // 后端API的基础URL
+
+      // 上传文件函数
+      async function uploadFile() {
+        const fileInput = document.getElementById('uploadFile')
+        const file = fileInput.files[0]
+        const status = document.getElementById('uploadStatus')
+
+        if (!file) {
+          status.textContent = '请选择一个文件'
+          return
+        }
+
+        const formData = new FormData()
+        formData.append('file', file)
+
+        status.textContent = '正在上传...'
+
+        try {
+          const response = await fetch(`${apiBaseUrl}/upload`, {
+            method: 'POST',
+            body: formData
+          })
+
+          const result = await response.json()
+          if (response.ok) {
+            status.textContent = '文件上传成功！'
+          } else {
+            status.textContent = `上传失败: ${result.error}`
+          }
+        } catch (error) {
+          status.textContent = `上传失败: ${error.message}`
+        }
+      }
+
+      // 下载文件函数
+      async function downloadFile() {
+        const fileNameInput = document.getElementById('downloadFileName')
+        const fileName = fileNameInput.value
+        const status = document.getElementById('downloadStatus')
+
+        if (!fileName) {
+          status.textContent = '请输入要下载的文件名'
+          return
+        }
+
+        status.textContent = '正在下载...'
+
+        try {
+          const response = await fetch(`${apiBaseUrl}/download/${fileName}`, {
+            method: 'GET'
+          })
+
+          if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = fileName
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            status.textContent = '文件下载成功！'
+          } else {
+            const result = await response.json()
+            status.textContent = `下载失败: ${result.error}`
+          }
+        } catch (error) {
+          status.textContent = `下载失败: ${error.message}`
+        }
+      }
+    </script>
+  </body>
+</html>
